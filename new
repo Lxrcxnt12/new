@@ -1,0 +1,742 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text.RegularExpressions;
+using BepInEx;
+using ExitGames.Client.Photon;
+using GorillaLocomotion;
+using GorillaNetworking;
+using Photon.Pun;
+using Photon.Realtime;
+using PlayFab;
+using PlayFab.ClientModels;
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.XR;
+
+// Token: 0x02000002 RID: 2
+[BepInPlugin("auroraGui.auroraGui", "censored", "1.0.0")]
+public class AnthemiaTemplate : BaseUnityPlugin
+{
+	// Token: 0x06000001 RID: 1 RVA: 0x00002050 File Offset: 0x00000250
+	private void Update()
+	{
+        this.WorkMods();
+        bool flag = GameObject.Find("forest") != null;
+        if (flag)
+        {
+            bool flag2 = !GameObject.Find("forest").active;
+            if (flag2)
+            {
+                GameObject.Find("forest").SetActive(true);
+                GameObject.Find(this.GUIName).SetActive(true);
+            }
+        }
+        bool flag3 = this.tagAura;
+        if (flag3)
+        {
+        }
+        foreach (VRRig vrrig in (VRRig[])UnityEngine.Object.FindObjectsOfType(typeof(VRRig)))
+        {
+            bool flag4 = !vrrig.isOfflineVRRig && !vrrig.isMyPlayer && !vrrig.photonView.IsMine;
+            if (flag4)
+            {
+                vrrig.playerText.text = AnthemiaTemplate.NormalizeName(true, vrrig.photonView.Owner.NickName) + "\n USERID: " + vrrig.photonView.Owner.UserId;
+            }
+        }
+    }
+
+    // Token: 0x06000002 RID: 2 RVA: 0x00002160 File Offset: 0x00000360
+    private void WorkMods()
+	{
+		bool lagServer = this.LagServer;
+		if (lagServer)
+		{
+			this.LagServerTimer += Time.deltaTime;
+			bool flag = this.LagServerTimer >= 0.08f;
+			if (flag)
+			{
+				UnityEngine.Object.Destroy(GorillaTagger.Instance.myVRRig.gameObject);
+				this.LagServerTimer = 0f;
+			}
+		}
+		bool crouchJump = this.CrouchJump;
+		if (crouchJump)
+		{
+			List<InputDevice> list = new List<InputDevice>();
+			InputDevices.GetDevicesWithCharacteristics(InputDeviceCharacteristics.HeldInHand | InputDeviceCharacteristics.Controller | InputDeviceCharacteristics.Left, list);
+			bool flag2;
+			list[0].TryGetFeatureValue(CommonUsages.secondaryButton, out flag2);
+			bool flag3 = flag2;
+			if (flag3)
+			{
+				GorillaLocomotion.Player.Instance.transform.position += GorillaLocomotion.Player.Instance.bodyCollider.transform.up * Time.deltaTime * 2f;
+			}
+		}
+
+
+		bool flag4 = AnthemiaTemplate.baller;
+		if (flag4)
+		{
+			GorillaLocomotion.Player.Instance.GetComponent<Rigidbody>().velocity = new Vector3(0f, 0f, 0f);
+			GorillaLocomotion.Player.Instance.leftHandTransform.position = GorillaLocomotion.Player.Instance.bodyCollider.transform.position;
+			GorillaLocomotion.Player.Instance.rightHandTransform.position = GorillaLocomotion.Player.Instance.bodyCollider.transform.position;
+			bool key = UnityInput.Current.GetKey(KeyCode.Space);
+			if (key)
+			{
+				GorillaLocomotion.Player.Instance.transform.position += GorillaLocomotion.Player.Instance.bodyCollider.transform.up * Time.deltaTime * 10f;
+			}
+			bool key2 = UnityInput.Current.GetKey(KeyCode.LeftShift);
+			if (key2)
+			{
+				GorillaLocomotion.Player.Instance.transform.position += GorillaLocomotion.Player.Instance.bodyCollider.transform.up * Time.deltaTime * -10f;
+			}
+			bool key3 = UnityInput.Current.GetKey(KeyCode.W);
+			if (key3)
+			{
+				GorillaLocomotion.Player.Instance.transform.position += GorillaLocomotion.Player.Instance.bodyCollider.transform.forward * Time.deltaTime * 10f;
+			}
+			bool key4 = UnityInput.Current.GetKey(KeyCode.S);
+			if (key4)
+			{
+				GorillaLocomotion.Player.Instance.transform.position += GorillaLocomotion.Player.Instance.bodyCollider.transform.forward * Time.deltaTime * -10f;
+			}
+			bool key5 = UnityInput.Current.GetKey(KeyCode.A);
+			if (key5)
+			{
+				GorillaLocomotion.Player.Instance.transform.Rotate(0f, -1.17f, 0f);
+			}
+			bool key6 = UnityInput.Current.GetKey(KeyCode.D);
+			if (key6)
+			{
+				GorillaLocomotion.Player.Instance.transform.Rotate(0f, 1.17f, 0f);
+			}
+		}
+	}
+
+	// Token: 0x06000003 RID: 3 RVA: 0x00002490 File Offset: 0x00000690
+	public void Start()
+	{
+		ColorUtility.TryParseHtmlString("#FF00FF", out this.color1);
+		ColorUtility.TryParseHtmlString("#FF00FF", out this.color2);
+		GameObject.Find("CodeOfConduct").GetComponent<Text>().text = "========== Aurora Gui ==========";
+		GameObject.Find("CodeOfConduct").GetComponent<Text>().material.color = Color.magenta;
+		GameObject.Find("COC Text").GetComponent<Text>().text = "Nickname: " + PhotonNetwork.LocalPlayer.NickName + "\n\nCredits:\n Lxrcxnt,\nGummey,\nFast,\nPepega,\nDark";
+		GameObject.Find("screen").GetComponent<MeshRenderer>().material = null;
+		GameObject.Find("screen").GetComponent<MeshRenderer>().material.color = Color.black;
+		GameObject.Find("REMOVE board").GetComponent<MeshRenderer>().material = null;
+		GameObject.Find("REMOVE board").GetComponent<MeshRenderer>().material.color = Color.black;
+		GameObject.Find("motdscreen").GetComponent<MeshRenderer>().material = null;
+		GameObject.Find("motdscreen").GetComponent<MeshRenderer>().material.color = Color.black;
+	}
+
+	// Token: 0x06000004 RID: 4 RVA: 0x000025C8 File Offset: 0x000007C8
+	public static string NormalizeName(bool doIt, string text)
+	{
+		if (doIt)
+		{
+			text = new string(Array.FindAll<char>(text.ToCharArray(), (char c) => char.IsLetterOrDigit(c)));
+			bool flag = text.Length > 12;
+			if (flag)
+			{
+				text = text.Substring(0, 10);
+			}
+			text = text.ToUpper();
+		}
+		return text;
+	}
+
+	// Token: 0x06000005 RID: 5 RVA: 0x00002638 File Offset: 0x00000838
+	public void Check(string groupId)
+	{
+		PlayFabClientAPI.GetSharedGroupData(new GetSharedGroupDataRequest
+		{
+			SharedGroupId = groupId
+		}, delegate (GetSharedGroupDataResult request)
+		{
+			foreach (KeyValuePair<string, SharedGroupDataRecord> keyValuePair in request.Data)
+			{
+				Debug.Log("PlayFab Id:" + keyValuePair.Key);
+			}
+		}, delegate (PlayFabError Error)
+		{
+			Debug.Log("Error: " + Error.ErrorMessage);
+			bool flag = Error.ErrorMessage.Contains("The client has exceeded the maximum API request rate and is being throttled");
+			if (flag)
+			{
+			}
+		}, null, null);
+	}
+
+	// Token: 0x06000006 RID: 6 RVA: 0x0000269C File Offset: 0x0000089C
+	private void OnGUI()
+	{
+		GUI.backgroundColor = Color.magenta;
+		GUI.color = Color.black;
+		bool flag = GUI.Button(new Rect(20f, 20f, 100f, 20f), this.GUIText);
+		if (flag)
+		{
+			bool flag2 = !this.youturnnedmeon;
+			if (flag2)
+			{
+				this.GUIText = "Disable GUI";
+				this.youturnnedmeon = true;
+			}
+			else
+			{
+				this.GUIText = "Enable GUI";
+				this.youturnnedmeon = false;
+			}
+		}
+		bool flag3 = this.youturnnedmeon;
+		if (flag3)
+		{
+			this.windowRect = GUI.Window(10000, this.windowRect, new GUI.WindowFunction(this.MainGUI), this.GUIName);
+		}
+	}
+
+    private const int V = 3;
+
+    // Token: 0x06000007 RID: 7 RVA: 0x00002758 File Offset: 0x00000958
+    private void MainGUI(int windowID)
+    {
+        GUI.contentColor = this.color1;
+        GUI.backgroundColor = Color.magenta;
+        int num = this.PageNum + 1;
+        GUI.Label(new Rect(230f, 20f, 200f, 20f), this.PageName);
+        NewMethod();
+        GUI.DragWindow();
+
+        void NewMethod()
+        {
+            NewMethod1();
+        }
+    }
+
+    private void NewMethod1()
+    {
+        switch (this.PageNum)
+        {
+            case 0:
+                {
+                    this.Codetojoin = GUI.TextArea(new Rect(20f, 50f, 100f, 20f), this.Codetojoin);
+                    bool flag = GUI.Button(new Rect(20f, 80f, 115f, 30f), "Join");
+                    if (flag)
+                    {
+                        PhotonNetworkController.Instance.AttemptToJoinSpecificRoom(this.Codetojoin);
+                    }
+                    bool flag2 = GUI.Button(new Rect(20f, 110f, 115f, 30f), "Join Random");
+                    if (flag2)
+                    {
+                        PhotonNetwork.JoinRandomRoom();
+                    }
+                    bool flag3 = GUI.Button(new Rect(20f, 140f, 115f, 30f), "Make Name");
+                    if (flag3)
+                    {
+                        PhotonNetwork.LocalPlayer.NickName = this.Codetojoin;
+                    }
+                    bool flag4 = GUI.Button(new Rect(200f, 100f, 115f, 30f), "Discord");
+                    if (flag4)
+                    {
+                    }
+                    bool flag5 = GUI.Button(new Rect(200f, 130f, 115f, 30f), "Grab All IDs");
+                    if (flag5)
+                    {
+                        string text = "========== NEW ROOM! ==========";
+                        foreach (Photon.Realtime.Player player in PhotonNetwork.PlayerList)
+                        {
+                            text = string.Concat(new string[]
+                            {
+                        text,
+                        "\nPlayer Name: ",
+                        player.NickName,
+                        " , Player ID: ",
+                        player.UserId
+                            });
+                        }
+                        text += "\n====================\n";
+                        File.AppendAllText("PlayerIDs.txt", text);
+                    }
+                    bool flag6 = GUI.Button(new Rect(200f, 160f, 115f, 30f), "PlaceHolder");
+                    if (flag6)
+                    {
+                    }
+                    bool flag7 = GUI.Button(new Rect(390f, 70f, 115f, 30f), "Change Idenity");
+                    if (flag7)
+                    {
+                        GorillaLocomotion.Player.Instance.name = "AURORAGUI";
+                        PhotonNetwork.LocalPlayer.NickName = "AURORAGUI";
+                    }
+                    bool flag8 = GUI.Button(new Rect(390f, 100f, 115f, 30f), "No-Illegal");
+                    if (flag8)
+                    {
+                        Hashtable hashtable = new Hashtable();
+                        hashtable.Add("mods", "(installedIDs:(com.author.gorillatag.brokencontrollerorg.legoandmars,gorillatag.utilladev.auros.bepinex.bepi wryser.gorillatagwrysersgopro.org.legoandmars,gorillatag.utilla");
+                        PhotonNetwork.LocalPlayer.SetCustomProperties(hashtable, null, null);
+                    }
+                    bool flag9 = GUI.Button(new Rect(390f, 130f, 115f, 30f), "No-Snitch");
+                    if (flag9)
+                    {
+                        Hashtable hashtable = new Hashtable();
+                        hashtable.Add("mods", "");
+                        PhotonNetwork.LocalPlayer.SetCustomProperties(hashtable, null, null);
+                    }
+                    bool flag10 = GUI.Button(new Rect(390f, 160f, 115f, 30f), "Disconnect");
+                    if (flag10)
+                    {
+                        PhotonNetwork.Disconnect();
+                    }
+                    bool flag11 = GUI.Button(new Rect(0f, 440f, 500f, 30f), ">>>>>>>");
+                    if (flag11)
+                    {
+                        this.PageNum++;
+                        bool flag12 = this.PageNum == 0;
+                        if (flag12)
+                        {
+                            this.PageName = "Random Mods";
+                        }
+                        bool flag13 = this.PageNum == 1;
+                        if (flag13)
+                        {
+                            this.PageName = "COMP Mods";
+                        }
+                        bool flag14 = this.PageNum == 2;
+                        if (flag14)
+                        {
+                            this.PageName = "Lobby Fucker";
+                        }
+                        bool flag15 = this.PageNum == 3;
+                        if (flag15)
+                        {
+                            this.PageName = "Mod Checker";
+                        }
+                    }
+                    AnthemiaTemplate.playspace = GUI.Toggle(new Rect(200f, 50f, 115f, 30f), AnthemiaTemplate.playspace, "AI Movement");
+                    break;
+                }
+            case 1:
+                {
+                    AnthemiaTemplate.baller = GUI.Toggle(new Rect(20f, 50f, 115f, 30f), AnthemiaTemplate.baller, "Playspace Mod");
+                    bool flag16 = AnthemiaTemplate.playspace;
+                    if (flag16)
+                    {
+                        List<InputDevice> list = new List<InputDevice>();
+                        InputDevices.GetDevicesWithCharacteristics(InputDeviceCharacteristics.HeldInHand | InputDeviceCharacteristics.Controller | InputDeviceCharacteristics.Right, list);
+                        bool flag17;
+                        list[0].TryGetFeatureValue(CommonUsages.secondaryButton, out flag17);
+                        bool flag18 = flag17;
+                        if (flag18)
+                        {
+                            GorillaLocomotion.Player.Instance.transform.position += GorillaLocomotion.Player.Instance.bodyCollider.transform.forward * Time.deltaTime * 2f;
+                        }
+                    }
+                    bool flag19 = GUI.Button(new Rect(20f, 80f, 115f, 30f), "Slide Control");
+                    if (flag19)
+                    {
+                        GorillaLocomotion.Player.Instance.slideControl = 0.025f;
+                    }
+                    bool flag20 = GUI.Button(new Rect(20f, 110f, 115f, 30f), "(M) Pit Geo");
+                    if (flag20)
+                    {
+                        GameObject.Find("Level/mountain/Geometry/V2_mountainsideice").GetComponent<GorillaSurfaceOverride>().extraVelMaxMultiplier = 1.1f;
+                        GameObject.Find("Level/mountain/Geometry/V2_mountainsideice").GetComponent<GorillaSurfaceOverride>().extraVelMultiplier = 1.1f;
+                        GameObject.Find("Level/mountain/Geometry/big slide/tubeslidecurveinside").GetComponent<GorillaSurfaceOverride>().extraVelMaxMultiplier = 1.1f;
+                        GameObject.Find("Level/mountain/Geometry/big slide/tubeslidecurveinside").GetComponent<GorillaSurfaceOverride>().extraVelMultiplier = 1.1f;
+                    }
+                    bool flag21 = GUI.Button(new Rect(20f, 140f, 115f, 30f), "(F)Pit Geo");
+                    if (flag21)
+                    {
+                        GameObject.Find("Level/forest/ForestObjects/pitgeo/pit ground").GetComponent<GorillaSurfaceOverride>().extraVelMaxMultiplier = 1.1f;
+                        GameObject.Find("Level/forest/ForestObjects/pitgeo/pit ground").GetComponent<GorillaSurfaceOverride>().extraVelMultiplier = 1.1f;
+                        GameObject.Find("Level/forest/ForestObjects/pitgeo/pit wall").GetComponent<GorillaSurfaceOverride>().extraVelMaxMultiplier = 1.2f;
+                        GameObject.Find("Level/forest/ForestObjects/pitgeo/pit wall").GetComponent<GorillaSurfaceOverride>().extraVelMultiplier = 1.2f;
+                        GameObject.Find("Level/forest/ForestObjects/pitgeo/pit lower slippery walls").GetComponent<GorillaSurfaceOverride>().extraVelMultiplier = 1.2f;
+                        GameObject.Find("Level/forest/ForestObjects/pitgeo/pit lower slippery walls").GetComponent<GorillaSurfaceOverride>().extraVelMaxMultiplier = 1.2f;
+                        GameObject.Find("Level/forest/ForestObjects/pitgeo/pit upper slippery walls").GetComponent<GorillaSurfaceOverride>().extraVelMultiplier = 1.2f;
+                        GameObject.Find("Level/forest/ForestObjects/pitgeo/pit upper slippery walls").GetComponent<GorillaSurfaceOverride>().extraVelMaxMultiplier = 1.2f;
+                    }
+                    bool flag22 = GUI.Button(new Rect(200f, 50f, 115f, 30f), "No Leaves");
+                    if (flag22)
+                    {
+                        foreach (GameObject gameObject in UnityEngine.Object.FindObjectsOfType(typeof(GameObject)) as GameObject[])
+                        {
+                            bool flag23 = gameObject.name == "smallleaves (1)";
+                            if (flag23)
+                            {
+                                gameObject.SetActive(false);
+                            }
+                        }
+                        foreach (GameObject gameObject2 in UnityEngine.Object.FindObjectsOfType(typeof(GameObject)) as GameObject[])
+                        {
+                            bool flag24 = gameObject2.name == "smallleaves.001";
+                            if (flag24)
+                            {
+                                gameObject2.SetActive(false);
+                            }
+                        }
+                        foreach (GameObject gameObject3 in UnityEngine.Object.FindObjectsOfType(typeof(GameObject)) as GameObject[])
+                        {
+                            bool flag25 = gameObject3.name == "smallleaves.002";
+                            if (flag25)
+                            {
+                                gameObject3.SetActive(false);
+                            }
+                        }
+                        foreach (GameObject gameObject4 in UnityEngine.Object.FindObjectsOfType(typeof(GameObject)) as GameObject[])
+                        {
+                            bool flag26 = gameObject4.name == "smallleaves.003";
+                            if (flag26)
+                            {
+                                gameObject4.SetActive(false);
+                            }
+                        }
+                    }
+                    this.CrouchJump = GUI.Toggle(new Rect(200f, 110f, 115f, 30f), this.CrouchJump, "Crouch Jump");
+                    bool flag27 = GUI.Button(new Rect(200f, 140f, 115f, 30f), "Gumey Boost");
+                    if (flag27)
+                    {
+                        GorillaGameManager.instance.slowJumpMultiplier = 1.2f;
+                        GorillaGameManager.instance.slowJumpLimit = 6.7f;
+                    }
+                    bool flag28 = GUI.Button(new Rect(200f, 170f, 115f, 30f), "Disable Tag Freeze");
+                    if (flag28)
+                    {
+                        GorillaLocomotion.Player.Instance.disableMovement = false;
+                    }
+                    bool flag29 = GUI.Button(new Rect(390f, 60f, 115f, 30f), "Lxr Boost");
+                    if (flag29)
+                    {
+                        GorillaGameManager.instance.slowJumpMultiplier = 1.3f;
+                        GorillaGameManager.instance.slowJumpLimit = 7.8f;
+                    }
+                    bool flag30 = GUI.Button(new Rect(390f, 90f, 115f, 30f), "Fast Boost");
+                    if (flag30)
+                    {
+                        GorillaGameManager.instance.slowJumpMultiplier = 1.4f;
+                        GorillaGameManager.instance.slowJumpLimit = 8f;
+                    }
+                    bool flag31 = GUI.Button(new Rect(390f, 120f, 115f, 30f), "Mosa (use w ram)");
+                    if (flag31)
+                    {
+                        GorillaGameManager.instance.slowJumpMultiplier = 1.2f;
+                        GorillaGameManager.instance.slowJumpLimit = 6.6f;
+                    }
+                    bool flag32 = GUI.Button(new Rect(390f, 150f, 115f, 30f), "Ram Speed");
+                    if (flag32)
+                    {
+                        GameObject.Find("Player VR Controller/GorillaPlayer").GetComponent<FPSController>().baseMoveSpeed = 40f;
+                        GameObject.Find("Player VR Controller/GorillaPlayer").GetComponent<FPSController>().lookHorizontal = 0.90f;
+                        GameObject.Find("Player VR Controller/GorillaPlayer").GetComponent<FPSController>().lookVertical = 0.60f;
+                        GameObject.Find("Player VR Controller/GorillaPlayer").GetComponent<FPSController>().shiftMoveSpeed = 20f;
+                    }
+                    bool flag33 = GUI.Button(new Rect(0f, 440f, 500f, 30f), ">>>>>>>");
+                    if (flag33)
+                    {
+                        this.PageNum++;
+                        bool flag34 = this.PageNum == 0;
+                        if (flag34)
+                        {
+                            this.PageName = "Random Mods";
+                        }
+                        bool flag35 = this.PageNum == 1;
+                        if (flag35)
+                        {
+                            this.PageName = "COMP Mods";
+                        }
+                        bool flag36 = this.PageNum == 2;
+                        if (flag36)
+                        {
+                            this.PageName = "Lobby Fucker";
+                        }
+                        bool flag37 = this.PageNum == 3;
+                        if (flag37)
+                        {
+                            this.PageName = "Mod Checker";
+                        }
+                    }
+                    bool flag38 = GUI.Button(new Rect(0f, 460f, 500f, 30f), "<<<<<<<");
+                    if (flag38)
+                    {
+                        this.PageNum--;
+                        bool flag39 = this.PageNum == 0;
+                        if (flag39)
+                        {
+                            this.PageName = "Random Mods";
+                        }
+                        bool flag40 = this.PageNum == 1;
+                        if (flag40)
+                        {
+                            this.PageName = "COMP Mods";
+                        }
+                        bool flag41 = this.PageNum == 2;
+                        if (flag41)
+                        {
+                            this.PageName = "Lobby Fucker";
+                            bool flag42 = this.PageNum == 3;
+                            if (flag42)
+                            {
+                                this.PageName = "Mod Checker";
+                                bool flag43 = this.PageNum == 4;
+                                if (flag43) ;
+                            }
+                        }
+                    }
+                    break;
+
+
+
+                }
+            case 3;   
+                {
+                    bool flag43 = GUI.Button(new Rect(20f, 50f, 115f, 30f), "Crash all");
+                    if (flag43)
+                    {
+                    }
+                    bool flag44 = GUI.Button(new Rect(20f, 80f, 115f, 30f), "PRIV PRIV LOBBY");
+                    if (flag44)
+                    {
+                        PhotonNetwork.CurrentRoom.IsVisible = true;
+
+                    }
+                    bool flag45 = GUI.Button(new Rect(20f, 110f, 115f, 30f), "100 player");
+                    if (flag45)
+                    {
+                        PhotonNetwork.CreateRoom("FAST", new RoomOptions { MaxPlayers = 100 });
+                    }
+                    this.LagServer = GUI.Toggle(new Rect(200f, 50f, 115f, 30f), this.LagServer, "Lag Server");
+                    bool flag46 = GUI.Button(new Rect(200f, 110f, 115f, 30f), "Log All IDs");
+                    if (flag46)
+                    {
+                        string text2 = PhotonNetwork.CurrentRoom.Name + Regex.Replace(PhotonNetwork.CloudRegion, "[^a-zA-Z0-9]", "").ToUpper();
+                        this.Check(text2);
+                        File.WriteAllText("stuff.txt", text2);
+                    }
+                    bool flag47 = GUI.Button(new Rect(200f, 140f, 115f, 30f), "UpsideDown Head");
+                    if (flag47)
+                    {
+
+
+
+                        {
+                            if (PhotonNetwork.IsConnectedAndReady && PhotonNetwork.InRoom)
+                            {
+                                PhotonNetwork.CurrentRoom.SetCustomProperties(new ExitGames.Client.Photon.Hashtable() { { "RoomName", newRoomName } });
+
+
+                                bool flag48 = GUI.Button(new Rect(200f, 170f, 115f, 30f), "Give All Cosmetics");
+                                if (flag48)
+                                {
+                                    string itemIdToUnlock = null;
+                                    int v = CosmeticsController.instance.allCosmetics.FindIndex((CosmeticsController.CosmeticItem x) => itemIdToUnlock == x.itemName);
+                                    bool flag = v > -1;
+                                    if (flag)
+                                    {
+                                        bool flag2 = !CosmeticsController.instance.unlockedCosmetics.Contains(CosmeticsController.instance.allCosmetics[v]);
+                                        if (flag2)
+                                        {
+                                            CosmeticsController.instance.unlockedCosmetics.Add(CosmeticsController.instance.allCosmetics[v]);
+                                        }
+                                        CosmeticsController cosmeticsController = CosmeticsController.instance;
+                                        cosmeticsController.concatStringCosmeticsAllowed += CosmeticsController.instance.allCosmetics[v].itemName;
+                                        switch (CosmeticsController.instance.allCosmetics[v].itemCategory)
+                                        {
+                                            case CosmeticsController.CosmeticCategory.Hat:
+                                                {
+                                                    bool flag3 = !CosmeticsController.instance.unlockedHats.Contains(CosmeticsController.instance.allCosmetics[v]);
+                                                    if (flag3)
+                                                    {
+                                                        CosmeticsController.instance.unlockedHats.Add(CosmeticsController.instance.allCosmetics[v]);
+                                                    }
+                                                    break;
+                                                }
+                                            case CosmeticsController.CosmeticCategory.Badge:
+                                                {
+                                                    bool flag4 = !CosmeticsController.instance.unlockedBadges.Contains(CosmeticsController.instance.allCosmetics[v]);
+                                                    if (flag4)
+                                                    {
+                                                        CosmeticsController.instance.unlockedBadges.Add(CosmeticsController.instance.allCosmetics[v]);
+                                                    }
+                                                    break;
+                                                }
+                                            case CosmeticsController.CosmeticCategory.Face:
+                                                {
+                                                    bool flag5 = !CosmeticsController.instance.unlockedFaces.Contains(CosmeticsController.instance.allCosmetics[v]);
+                                                    if (flag5)
+                                                    {
+                                                        CosmeticsController.instance.unlockedFaces.Add(CosmeticsController.instance.allCosmetics[v]);
+                                                    }
+                                                    break;
+                                                }
+                                            case CosmeticsController.CosmeticCategory.Holdable:
+                                            case CosmeticsController.CosmeticCategory.Gloves:
+                                            case CosmeticsController.CosmeticCategory.Slingshot:
+                                                {
+                                                    bool flag6 = !CosmeticsController.instance.unlockedHoldable.Contains(CosmeticsController.instance.allCosmetics[v]);
+                                                    if (flag6)
+                                                    {
+                                                        CosmeticsController.instance.unlockedHoldable.Add(CosmeticsController.instance.allCosmetics[v]);
+                                                    }
+                                                    break;
+                                                }
+                                                bool flag49 = GUI.Button(new Rect(390f, 50f, 115f, 30f), "PlaceHolder");
+                                                if (flag49)
+                                                {
+                                                }
+                                                bool flag50 = GUI.Button(new Rect(390f, 80f, 115f, 30f), "PlaceHolder");
+                                                if (flag50)
+                                                {
+                                                }
+                                                bool flag51 = GUI.Button(new Rect(390f, 110f, 115f, 30f), "PlaceHolder");
+                                                if (flag51)
+                                                {
+                                                }
+                                                bool flag52 = GUI.Button(new Rect(390f, 140f, 115f, 30f), "PlaceHolder");
+                                                if (flag52)
+                                                {
+                                                }
+                                                bool flag53 = GUI.Button(new Rect(0f, 440f, 500f, 30f), ">>>>>>>");
+                                                if (flag53)
+                                                {
+                                                    this.PageNum++;
+                                                    bool flag54 = this.PageNum == 0;
+                                                    if (flag54)
+                                                    {
+                                                        this.PageName = "Random Mods";
+                                                    }
+                                                    bool flag55 = this.PageNum == 1;
+                                                    if (flag55)
+                                                    {
+                                                        this.PageName = "COMP Mods";
+                                                    }
+                                                    bool flag56 = this.PageNum == 2;
+                                                    if (flag56)
+                                                    {
+                                                        this.PageName = "Lobby Fucker";
+                                                    }
+                                                    bool flag57 = this.PageNum == 3;
+                                                    if (flag57)
+                                                    {
+                                                        this.PageName = "Mod Checker";
+                                                    }
+                                                }
+                                                bool flag58 = GUI.Button(new Rect(0f, 460f, 500f, 30f), "<<<<<<<");
+                                                if (flag58)
+                                                {
+                                                    this.PageNum--;
+                                                    bool flag59 = this.PageNum == 0;
+                                                    if (flag59)
+                                                    {
+                                                        this.PageName = "Random Mods";
+                                                    }
+                                                    bool flag60 = this.PageNum == 1;
+                                                    if (flag60)
+                                                    {
+                                                        this.PageName = "COMP Mods";
+                                                    }
+                                                    bool flag61 = this.PageNum == 2;
+                                                    if (flag61)
+                                                    {
+                                                        this.PageName = "Lobby Fucker";
+                                                        bool flag62 = this.PageNum == 3;
+                                                        if (flag62)
+                                                        {
+                                                            this.PageName = "Mod Checker";
+                                                        }
+                                                    }
+                                                }
+                                                break;
+                                        }
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            case 4:
+                {
+                    bool flag63 = GUI.Button(new Rect(0f, 460f, 500f, 30f), "<<<<<<<");
+                    if (flag63)
+                    {
+                        this.PageNum--;
+                        bool flag64 = this.PageNum == 0;
+                        if (flag64)
+                        {
+                            this.PageName = "Random Mods";
+                        }
+                        bool flag65 = this.PageNum == 1;
+                        if (flag65)
+                        {
+                            this.PageName = "COMP Mods";
+                        }
+                        bool flag66 = this.PageNum == 2;
+                        if (flag66)
+                        {
+                            this.PageName = "Lobby Fucker";
+                        }
+                        bool flag67 = this.PageNum == 3;
+                        if (flag67)
+                        {
+                            this.PageName = "Mod Checker";
+                        }
+                    }
+                    break;
+                }
+        }
+    }
+
+    // Token: 0x04000001 RID: 1
+    public bool disableMovement;
+
+	// Token: 0x04000002 RID: 2
+	public static bool playspace;
+
+	// Token: 0x04000003 RID: 3
+	public static bool baller;
+
+	// Token: 0x04000004 RID: 4
+	public string GUIName = "Aurora";
+
+	// Token: 0x04000005 RID: 5
+	private Color guiColor = Color.magenta;
+
+	// Token: 0x04000006 RID: 6
+	private float colorTimer = 0f;
+
+	// Token: 0x04000007 RID: 7
+	private Rect windowRect = new Rect(60f, 20f, 500f, 500f);
+
+	// Token: 0x04000008 RID: 8
+	public string GUIText = "Enable GUI";
+
+	// Token: 0x04000009 RID: 9
+	public string PageName = "Random Mods";
+
+	// Token: 0x0400000A RID: 10
+	public bool tagAura = false;
+
+	// Token: 0x0400000B RID: 11
+	private bool LagServer = false;
+
+	// Token: 0x0400000C RID: 12
+	private float LagServerTimer = 0f;
+
+	// Token: 0x0400000D RID: 13
+	private bool CrouchJump = false;
+
+	// Token: 0x0400000E RID: 14
+	public bool youturnnedmeon = false;
+
+	// Token: 0x0400000F RID: 15
+	public int PageNum;
+
+	// Token: 0x04000010 RID: 16
+	public Color color1;
+
+	// Token: 0x04000011 RID: 17
+	public Color color2;
+
+	// Token: 0x04000012 RID: 18
+	public string Codetojoin = "";
+    private object newRoomName;
+}
